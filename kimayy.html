@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Summer Vibes Grade Calculator - Mobile Friendly</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(to right, #fceabb, #f8b500);
+    min-height: 100vh;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.container {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+h1 {
+    text-align: center;
+    color: #ff5722;
+    margin-bottom: 20px;
+}
+.class-summary {
+    background: #fff3cc;
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    font-weight: bold;
+    color: #ff5722;
+    margin-bottom: 20px;
+}
+/* Mobile-first: Cards */
+.card-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.student-card {
+    background: #fff3cc;
+    padding: 20px;
+    border-radius: 15px;
+    border-left: 5px solid #ff5722;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.student-card h3 {
+    margin: 0 0 15px 0;
+    color: #ff5722;
+}
+.student-card h3 input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ff5722;
+    border-radius: 8px;
+    font-size: 16px;
+    min-height: 44px;
+    background: white;
+}
+.student-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.student-row label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 500;
+}
+.grade-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ff5722;
+    border-radius: 8px;
+    font-size: 16px;
+    min-height: 44px;
+}
+.total-display {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+.delete-btn, .add-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #ff5722;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    min-height: 44px;
+    width: 100%;
+}
+.delete-btn:hover, .add-btn:hover {
+    background: #e64a19;
+}
+/* Desktop Table */
+.table-section {
+    display: none;
+}
+@media (min-width: 769px) {
+    .card-container {
+        display: none;
+    }
+    .table-section {
+        display: block;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .grades-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .grades-table th, .grades-table td {
+        padding: 15px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+    .grades-table th {
+        background: linear-gradient(135deg,#ff5722,#ffd500);
+        color: white;
+    }
+    .grades-table .name-input, .grades-table .grade-input {
+        padding: 8px;
+        border: 1px solid #ff5722;
+        border-radius: 5px;
+        width: 80px;
+        font-size: 14px;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Summer Vibes Grade Calculator</h1>
+    <div id="classSummary" class="class-summary">Class Average Final Grade: 0.00</div>
+    
+    <!-- Desktop Table -->
+    <div class="table-section">
+        <table class="grades-table" id="gradesTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Quiz (20%)</th>
+                    <th>Lab (30%)</th>
+                    <th>Assign (10%)</th>
+                    <th>Attend (10%)</th>
+                    <th>Exam (30%)</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="studentRows"></tbody>
+        </table>
+    </div>
+    
+    <!-- Mobile Cards -->
+    <div id="cardContainer" class="card-container"></div>
+    
+    <button id="addStudentBtn" class="add-btn">➕ Add Student</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('studentRows');
+    const cardContainer = document.getElementById('cardContainer');
+    const addBtn = document.getElementById('addStudentBtn');
+    const classSummary = document.getElementById('classSummary');
+    
+    // Weights: Quiz, Lab, Assign, Attend, Exam
+    const weights = [0.2, 0.3, 0.1, 0.1, 0.3];
+    
+    let studentCount = 0;
+    
+    function createStudent(rowIndex = null) {
+        const id = rowIndex !== null ? rowIndex : studentCount++;
+        const name = `Student ${id + 1}`;
+        
+        // Desktop Table Row
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" value="${name}" class="name-input"></td>
+            <td><input type="number" min="0" max="100" value="0" class="grade-input"></td>
+            <td><input type="number" min="0" max="100" value="0" class="grade-input"></td>
+            <td><input type="number" min="0" max="100" value="0" class="grade-input"></td>
+            <td><input type="number" min="0" max="100" value="0" class="grade-input"></td>
+            <td><input type="number" min="0" max="100" value="0" class="grade-input"></td>
+            <td><span class="total">0.00</span></td>
+            <td><button class="delete-btn">🗑 Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+        
+        // Mobile Card
+        const card = document.createElement('div');
+        card.className = 'student-card';
+        card.innerHTML = `
+            <h3><input type="text" value="${name}" class="name-input"></h3>
+            <div class="student-row">
+                <label>Quiz (20%): <input type="number" min="0" max="100" value="0" class="grade-input"></label>
+                <label>Lab (30%): <input type="number" min="0" max="100" value="0" class="grade-input"></label>
+                <label>Assign (10%): <input type="number" min="0" max="100" value="0" class="grade-input"></label>
+                <label>Attend (10%): <input type="number" min="0" max="100" value="0" class="grade-input"></label>
+                <label>Exam (30%): <input type="number" min="0" max="100" value="0" class="grade-input"></label>
+            </div>
+            <div class="total-display">Total: 0.00</div>
+            <button class="delete-btn">🗑 Delete Student</button>
+        `;
+        cardContainer.appendChild(card);
+        
+        attachListeners(tr, card);
+        updateClassAverage();
+    }
+    
+    function attachListeners(tableRow, card) {
+        // Inputs
+        const inputs = [...(tableRow ? tableRow.querySelectorAll('.grade-input, .name-input') : []), 
+                        ...(card ? card.querySelectorAll('.grade-input, .name-input') : [])];
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                calculateTotals(tableRow, card);
+                updateClassAverage();
+            });
+        });
+        
+        // Delete buttons
+        const deleteBtns = [...(tableRow ? [tableRow.querySelector('.delete-btn')] : []), 
+                            card ? [card.querySelector('.delete-btn')] : []];
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tableRow?.remove();
+                card?.remove();
+                updateClassAverage();
+            });
+        });
+    }
+    
+    function calculateTotals(tableRow, card) {
+        const calculateForElement = (el) => {
+            if (!el) return;
+            const grades = Array.from(el.querySelectorAll('.grade-input')).map(input => parseFloat(input.value) || 0);
+            const total = grades.reduce((sum, grade, i) => sum + grade * weights[i], 0).toFixed(2);
+            const totalEl = el.querySelector('.total, .total-display');
+            if (totalEl) {
+                totalEl.textContent = totalEl.classList.contains('total') ? total : `Total: ${total}`;
+                const color = parseFloat(total) >= 90 ? 'green' : parseFloat(total) >= 75 ? 'orange' : 'red';
+                totalEl.style.color = color;
+                if (totalEl.classList.contains('total-display')) {
+                    totalEl.style.background = color === 'green' ? '#d4edda' : color === 'orange' ? '#fff3cd' : '#f8d7da';
+                }
+            }
+        };
+        calculateForElement(tableRow);
+        calculateForElement(card);
+    }
+    
+    function updateClassAverage() {
+        const totals = Array.from(document.querySelectorAll('.total, .total-display')).map(el => {
+            const match = el.textContent.match(/(\d+(?:\.\d+)?)/);
+            return parseFloat(match?.[1] || 0);
+        });
+        const avg = totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(2) : 0;
+        classSummary.textContent = `Class Average Final Grade: ${avg}`;
+        const avgNum = parseFloat(avg);
+        classSummary.style.background = avgNum >= 90 ? '#d4edda' : avgNum >= 75 ? '#fff3cd' : '#f8d7da';
+    }
+    
+    // Initial students (optimized for mobile)
+    for (let i = 0; i < 3; i++) {
+        createStudent(i);
+    }
+    
+    // Add button
+    addBtn.addEventListener('click', () => createStudent());
+});
+</script>
+</body>
+</html>
